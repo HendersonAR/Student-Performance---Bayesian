@@ -1,0 +1,54 @@
+---
+title: "Project Proposal: Add your project name"
+format: pdf
+---
+
+## Team
+
+List the members of your team here:
+- Name 1
+- Name 2
+- ...
+
+## Data Set
+
+Name the dataset you will use.
+
+## Research Questions
+
+List 2-4 research questions you aim to answer or hypotheses that you aim to test with the data. Likely, you will address 1-3 in your final project. It is good to have a few extra just in case you find that one of your ideas is not feasible with these data and the tools we have learned.
+
+## Data Processing and Preparation
+
+Describe what variables you will use and what subset of observations. Make a few exploritory data analysis figures or tables to show the data you will use.
+
+### Outcome(s)
+
+What outcome(s) will you use?
+
+### Predictors
+
+What predictor variables will you use? How will they be included in the model? For example, are they random effects? Will any be nonlinear? Will you include interaction terms? Are they continuous or categorical and how will you handle cateogrical variables?
+
+### Subsample
+
+Will you use all observations on only a subset of observations? If a subset, how will you select them and why?
+
+### Other
+
+Are there missing values and, if so, how will you handle missing data? 
+
+Are any variables skewed or have outliers that are of concern? If so, how will you handle this?
+
+## Modeling Approach
+
+What model(s) do you propose to use? You may want to specify the model as a hierarchical model. 
+
+How will you estimate your model?
+
+
+
+
+
+
+
