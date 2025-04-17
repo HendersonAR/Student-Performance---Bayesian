@@ -1,22 +1,25 @@
 ---
-title: "Project Proposal: Add your project name"
+title: "Student Performance | GROUP I"
 format: pdf
 ---
 
 ## Team
 
-List the members of your team here:
-- Name 1
-- Name 2
-- ...
+List the members of your team here: - Andrew Henderson - Carlos Mabrey - Seth Hillis - Jessica Reyes
 
 ## Data Set
 
-Name the dataset you will use.
+"Students_Grading_Dataset_Bias.csv"
 
 ## Research Questions
 
-List 2-4 research questions you aim to answer or hypotheses that you aim to test with the data. Likely, you will address 1-3 in your final project. It is good to have a few extra just in case you find that one of your ideas is not feasible with these data and the tools we have learned.
+1.  What are the effects of attenance %, axtracurriculars, parent education and stress level have on student performance.
+
+2.  Is there a relationship between levels of stress and academic performance?
+
+3.  How does the number of study hours/week impact total score among students?
+
+4.  How does sleep hours per night impact student stress scores / grades.
 
 ## Data Processing and Preparation
 
@@ -24,7 +27,7 @@ Describe what variables you will use and what subset of observations. Make a few
 
 ### Outcome(s)
 
-What outcome(s) will you use?
+-   Total Score, Stress Level, Grade
 
 ### Predictors
 
@@ -36,19 +39,12 @@ Will you use all observations on only a subset of observations? If a subset, how
 
 ### Other
 
-Are there missing values and, if so, how will you handle missing data? 
+Are there missing values and, if so, how will you handle missing data?
 
 Are any variables skewed or have outliers that are of concern? If so, how will you handle this?
 
 ## Modeling Approach
 
-What model(s) do you propose to use? You may want to specify the model as a hierarchical model. 
+What model(s) do you propose to use? You may want to specify the model as a hierarchical model.
 
 How will you estimate your model?
-
-
-
-
-
-
-
