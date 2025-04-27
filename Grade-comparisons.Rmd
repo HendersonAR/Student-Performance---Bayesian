@@ -1,0 +1,355 @@
+---
+title: "Student Scores"
+author: "Jessica Reyes"
+date: "2025-04-24"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(MCMCpack)
+library(lme4)
+student_data <- read.csv("student-scores.csv"); 
+clean_data <- read.csv("student-scores-clean.csv")
+head(student_data)
+head(clean_data)
+```
+
+$$
+Y_i|B_0, B_1, \sigma^2 \sim N(\beta_0+\beta_1x_i,\sigma^2)
+$$
+
+$$
+\beta_0 \sim N(\mu, \tau^2)
+$$
+$$
+\beta_1 \sim N(\mu, \tau^2)
+$$\
+$$
+\sigma^2 \sim InvGamma(\alpha_1, \alpha_2)
+$$
+
+```{r}
+library(MCMCpack)
+set.seed(54781)
+y <- clean_data$average_score
+x <- clean_data$weekly_self_study_hours
+n <- length(y)
+sumxx <- sum(x^2)
+mu0 <- 0
+tau2 <- 10000^2
+alpha1 <- 1
+alpha2 <- 1
+S <- 2.5e4
+posterior <- data.frame(beta0=rep(NA,S),
+                        beta1=rep(NA,S),
+                        sig2=rep(NA,S))
+beta0 <- 1
+beta1 <- 1
+sig2 <- 1
+for(s in 1:S) {
+  v <- 1 / (n/sig2 + 1/tau2)
+  beta0 <- rnorm(1, v*(sum(y-x*beta1)/sig2 + (1/tau2)*mu0), sqrt(v))
+  v <- 1/(sumxx/sig2 + 1/tau2)
+  beta1 <- rnorm(1, v*(sum(x*(y-beta0))/sig2 + (1/tau2)*mu0), sqrt(v))
+  sig2 <- rinvgamma(1,alpha1 + n/2,
+                    alpha2 + sum((y-beta0 - x*beta1)^2)/2)
+  posterior$beta0[s] <- beta0
+  posterior$beta1[s] <- beta1
+  posterior$sig2[s] <- sig2
+}
+post_samples_burnin <- posterior[-c(1:5000), ]
+results <- data.frame(
+  mean=c(mean(post_samples_burnin$beta0),
+         mean(post_samples_burnin$beta1),
+         mean(sqrt(post_samples_burnin$sig2))),
+  sd=c(sd(post_samples_burnin$beta0),
+       sd(post_samples_burnin$beta1),
+       sd(sqrt(post_samples_burnin$sig2))),
+  lower=c(quantile(post_samples_burnin$beta0,0.025),
+          quantile(post_samples_burnin$beta1,0.025),
+          quantile(sqrt(post_samples_burnin$sig2), 0.025)),
+  upper=c(quantile(post_samples_burnin$beta0,0.975),
+          quantile(post_samples_burnin$beta1,0.975),
+          quantile(sqrt(post_samples_burnin$sig2), 0.975))
+)
+row.names(results) <- c("intercept", "slope", "sigma")
+round(results,2)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(post_samples_burnin$beta0, type="l", lwd=1, las=1,
+     ylab="beta0", xlab="MCMC iteration")
+plot(post_samples_burnin$beta1, type="l", lwd=1, las=1,
+     ylab="beta1", xlab="MCMC iteration")
+plot(post_samples_burnin$sig2, type="l", lwd=1, las=1,
+     ylab="sigma-squared", xlab="MCMC iteration")
+```
+
+```{r}
+set.seed(6548)
+
+y <- clean_data$average_score
+x <- clean_data$weekly_self_study_hours
+
+X <- cbind(1,x)
+
+# dimensions
+n <- length(y)
+p <- ncol(X)
+
+# hyperperameters
+mu0 <- 0
+a <- b <- 1
+S <- 10000
+
+#place to store data
+posterior_beta <- matrix(NA,S,p)
+posterior_sig2 <- rep(NA,S)
+#starting values
+beta <- rep(0,p)
+sig2 <- 1
+
+XX <- t(X)%*%X
+Xy <- t(X)%*%y
+
+for(s in 1:S){
+  # update beta0
+  v <- solve(XX/sig2 + diag(rep(1/tau2,p)))
+  m <- v %*% (Xy/sig2 + mu0/tau2)
+  beta <- m + t(chol(v)) %*% rnorm(p)
+  #update sig2
+  sig2 <- rinvgamma(1, a + n/2,
+                    b + t(y-X%*%beta)%*%(y-X%*%beta)/2 )
+  #store results
+  posterior_beta[s,] <- beta
+  posterior_sig2[s] <- sig2
+}
+
+```
+
+```{r}
+set.seed(2213)
+# combine posteriors, make sigma, label
+posterior <- cbind(posterior_beta,sqrt(posterior_sig2))
+colnames(posterior) <- c("intercept","slope","sigma")
+# remove half for burn-in
+posterior <- posterior[1:round(s/2),]
+# length of resulting sample
+S2 <- nrow(posterior)
+
+results <- data.frame(
+  mean=colMeans(posterior),
+  sd=apply(posterior,2,sd),
+  lower=apply(posterior,2,quantile,0.025),
+  upper=apply(posterior,2,quantile,0.975),
+  row.names=colnames(posterior))
+round(results,2)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(posterior_beta[,1], type="l", las=1, main="beta0")
+plot(posterior_beta[,2], type="l", las=1, main="beta1")
+plot(posterior_sig2, type="l", las=1, main="sig2")
+
+```
+
+```{r}
+lm(y~x, data = clean_data)
+```
+
+```{r}
+set.seed(8523)
+
+y <- clean_data$average_score
+x <- clean_data$extracurricular_activities
+
+X <- cbind(1,x)
+
+# dimensions
+n <- length(y)
+p <- ncol(X)
+
+# hyperperameters
+mu0 <- 0
+a <- b <- 1
+S <- 10000
+
+#place to store data
+posterior_beta <- matrix(NA,S,p)
+posterior_sig2 <- rep(NA,S)
+#starting values
+beta <- rep(0,p)
+sig2 <- 1
+
+XX <- t(X)%*%X
+Xy <- t(X)%*%y
+
+for(s in 1:S){
+  # update beta0
+  v <- solve(XX/sig2 + diag(rep(1/tau2,p)))
+  m <- v %*% (Xy/sig2 + mu0/tau2)
+  beta <- m + t(chol(v)) %*% rnorm(p)
+  #update sig2
+  sig2 <- rinvgamma(1, a + n/2,
+                    b + t(y-X%*%beta)%*%(y-X%*%beta)/2 )
+  #store results
+  posterior_beta[s,] <- beta
+  posterior_sig2[s] <- sig2
+}
+
+```
+
+```{r}
+set.seed(2213)
+# combine posteriors, make sigma, label
+posterior <- cbind(posterior_beta,sqrt(posterior_sig2))
+colnames(posterior) <- c("intercept","slope","sigma")
+# remove half for burn-in
+posterior <- posterior[1:round(s/2),]
+# length of resulting sample
+S2 <- nrow(posterior)
+
+results <- data.frame(
+  mean=colMeans(posterior),
+  sd=apply(posterior,2,sd),
+  lower=apply(posterior,2,quantile,0.025),
+  upper=apply(posterior,2,quantile,0.975),
+  row.names=colnames(posterior))
+round(results,2)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(posterior_beta[,1], type="l", las=1, main="beta0")
+plot(posterior_beta[,2], type="l", las=1, main="beta1")
+plot(posterior_sig2, type="l", las=1, main="sig2")
+
+```
+
+```{r}
+set.seed(9922)
+
+y <- clean_data$average_score
+x <- clean_data$absence_days
+
+X <- cbind(1,x)
+
+# dimensions
+n <- length(y)
+p <- ncol(X)
+
+# hyperperameters
+mu0 <- 0
+a <- b <- 1
+S <- 10000
+
+#place to store data
+posterior_beta <- matrix(NA,S,p)
+posterior_sig2 <- rep(NA,S)
+#starting values
+beta <- rep(0,p)
+sig2 <- 1
+
+XX <- t(X)%*%X
+Xy <- t(X)%*%y
+
+for(s in 1:S){
+  # update beta0
+  v <- solve(XX/sig2 + diag(rep(1/tau2,p)))
+  m <- v %*% (Xy/sig2 + mu0/tau2)
+  beta <- m + t(chol(v)) %*% rnorm(p)
+  #update sig2
+  sig2 <- rinvgamma(1, a + n/2,
+                    b + t(y-X%*%beta)%*%(y-X%*%beta)/2 )
+  #store results
+  posterior_beta[s,] <- beta
+  posterior_sig2[s] <- sig2
+}
+```
+
+```{r}
+set.seed(2213)
+# combine posteriors, make sigma, label
+posterior <- cbind(posterior_beta,sqrt(posterior_sig2))
+colnames(posterior) <- c("intercept","slope","sigma")
+# remove half for burn-in
+posterior <- posterior[1:round(s/2),]
+# length of resulting sample
+S2 <- nrow(posterior)
+
+results <- data.frame(
+  mean=colMeans(posterior),
+  sd=apply(posterior,2,sd),
+  lower=apply(posterior,2,quantile,0.025),
+  upper=apply(posterior,2,quantile,0.975),
+  row.names=colnames(posterior))
+round(results,2)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(posterior_beta[,1], type="l", las=1, main="beta0")
+plot(posterior_beta[,2], type="l", las=1, main="beta1")
+plot(posterior_sig2, type="l", las=1, main="sig2")
+
+```
+
+```{r}
+# fit model in rstanarm
+grades_lmer <- stan_lmer(average_score ~ absence_days + (1 | gender), 
+                       data = clean_data)
+
+# show results
+summary(grades_lmer, digits = 3)
+```
+
+```{r}
+pp_check(grades_lmer)
+```
+
+```{r}
+lmer(average_score~absence_days+(1|gender), data = clean_data)
+```
+
+```{r}
+# fit model in rstanarm
+grades_lmer <- stan_lmer(average_score ~ absence_days + extracurricular_activities + (1 | gender), 
+                       data = clean_data)
+
+# show results
+summary(grades_lmer, digits = 3)
+```
+
+```{r}
+pp_check(grades_lmer)
+```
+
+```{r}
+lmer(average_score~absence_days+extracurricular_activities+(1|gender), data = clean_data)
+```
+
+```{r}
+# fit model in rstanarm
+grades_lmer <- stan_lmer(average_score ~ absence_days + extracurricular_activities + weekly_self_study_hours + (1 | gender), 
+                       data = clean_data)
+
+# show results
+summary(grades_lmer, digits = 3)
+```
+
+```{r}
+pp_check(grades_lmer)
+```
+
+```{r}
+lmer(average_score~absence_days+extracurricular_activities+weekly_self_study_hours+(1|gender), data = clean_data)
+```
