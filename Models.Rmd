@@ -18,6 +18,18 @@ clean_data <- read.csv("student-scores-clean.csv")
 head(student_data)
 head(clean_data)
 ```
+$$
+Y_i|B_0, B_1, \sigma^2 \sim N(\beta_0+\beta_1x_{1i}+\beta_2x_{2i}+\beta_3x_{3i}+\beta_4x_{4i},\sigma^2) \\
+\text{ where: } x_{1i},x_{2i},x_{3i},x_{4i} \text{are the predictors for observation i}
+$$
+
+$$
+\beta_j \sim N(\mu, \tau^2) \text{ where j=} 0,1,2,3,4
+$$
+
+$$
+\sigma^2 \sim InvGamma(\alpha_1, \alpha_2)
+$$
 
 ```{r}
 #Block Gibbs Sampler
