@@ -60,7 +60,7 @@ $\beta_j \sim N(0, 10000^2)$ for all $j=0,1,2,3,4$
 
 $\sigma^2 \sim InvGamma(1, 1)$
 
-We considered including career aspirations as a predictor but decided not to incorporate it in this model, either because it was difficult to quantify appropriately.
+We considered including career aspirations as a predictor but decided not to incorporate it in this model because it was difficult to quantify appropriately.
 
 How will you estimate your model?
 
