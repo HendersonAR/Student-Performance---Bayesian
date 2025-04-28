@@ -9,29 +9,31 @@ List the members of your team here: - Andrew Henderson - Carlos Mabrey - Seth Hi
 
 ## Data Set
 
-"Students_Grading_Dataset_Bias.csv"
+"Students-scores.csv"
 
 ## Research Questions
 
-1.  What are the effects of attenance %, axtracurriculars, parent education and stress level have on student performance.
+1.  What are the effects of absence_days, extracurricular_activities, parent education and stress level have on student performance.
 
-2.  Is there a relationship between levels of stress and academic performance?
+2.  Is there a relationship between career_aspiration and academic performance?
 
-3.  How does the number of study hours/week impact total score among students?
+3.  How does the inclusion of part_time_job impact total score among students?
 
-4.  How does sleep hours per night impact student stress scores / grades.
+4.  How large is the effect of weekly_self_study_hours on a students average grade?
 
 ## Data Processing and Preparation
 
-Describe what variables you will use and what subset of observations. Make a few exploritory data analysis figures or tables to show the data you will use.
+We will use 'part_time_job', 'absence_days', 'extracurricular_activities', 'weekly_self_study_hours', career_aspiration', and 'average_score'.
+Make a few exploritory data analysis figures or tables to show the data you will use.
 
 ### Outcome(s)
 
--   Total Score, Stress Level, Grade
+-   average_score (from cleaning data and taking the average of each students scores per subject.)
 
 ### Predictors
 
-What predictor variables will you use? How will they be included in the model? For example, are they random effects? Will any be nonlinear? Will you include interaction terms? Are they continuous or categorical and how will you handle cateogrical variables?
+Our predictor variables are 'part_time_job', 'absence_days', 'extracurricular_activities', 'weekly_self_study_hours', career_aspiration'
+How will they be included in the model? For example, are they random effects? Will any be nonlinear? Will you include interaction terms? Are they continuous or categorical and how will you handle cateogrical variables?
 
 ### Subsample
 
@@ -39,7 +41,7 @@ Will you use all observations on only a subset of observations? If a subset, how
 
 ### Other
 
-Are there missing values and, if so, how will you handle missing data?
+There were no missing values in the data and the scores for each subject were condensed into an average score for each student.
 
 Are any variables skewed or have outliers that are of concern? If so, how will you handle this?
 
