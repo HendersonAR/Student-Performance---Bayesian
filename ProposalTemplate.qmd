@@ -53,7 +53,10 @@ We think the block Gibbs Sampler and the rstanarm model, the traceplots showed c
 
 $$
 Y_i|B_0, B_1, \sigma^2 \sim N(\beta_0+\beta_1x_{1i}+\beta_2x_{2i}+\beta_3x_{3i}+\beta_4x_{4i},\sigma^2) \\
-\text{ where: } x_{1i},x_{2i},x_{3i},x_{4i} \text{are the predictors for observation i}
+$$
+
+$$
+\text{ where: } x_{1i},x_{2i},x_{3i},x_{4i} \text{ are the predictors for observation i}
 $$
 
 $$
