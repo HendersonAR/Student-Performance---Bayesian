@@ -15,8 +15,8 @@ library(rstanarm)
 library(bayesplot)
 library(MCMCpack)
 library(lme4)
-student_data <- read.csv("student-scores.csv"); 
-clean_data <- read.csv("student-scores-clean.csv")
+student_data <- read.csv("Data/student-scores.csv"); 
+clean_data <- read.csv("Data/student-scores-clean.csv")
 head(student_data)
 head(clean_data)
 ```
