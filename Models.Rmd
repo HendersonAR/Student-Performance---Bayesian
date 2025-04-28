@@ -1,0 +1,107 @@
+---
+title: "Data Analysis"
+author: "Jessica Reyes"
+date: "2025-04-28"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(MCMCpack)
+library(lme4)
+student_data <- read.csv("student-scores.csv"); 
+clean_data <- read.csv("student-scores-clean.csv")
+head(student_data)
+head(clean_data)
+```
+
+```{r}
+#Block Gibbs Sampler
+set.seed(4889)
+clean_data <- read.csv("student-scores-clean.csv")
+
+
+set.seed(8451)
+y <- clean_data$average_score
+x1 <- clean_data$part_time_job
+x2 <- clean_data$absence_days
+x3 <- clean_data$extracurricular_activities
+x4 <- clean_data$weekly_self_study_hours
+
+
+# Design matrix 
+X <- cbind(1, x1, x2, x3, x4)
+n <- length(y)
+p <- ncol(X)
+
+# Hyperparameters
+tau2 <- 10000^2
+a <- b <- 1
+mu0 <- rep(0, p)  
+
+S <- 2.5e4
+
+#place to store data
+posterior_beta <- matrix(NA, S, p)
+posterior_sig2 <- rep(NA, S)
+
+beta <- rep(0, p)
+sig2 <- 1
+
+XX <- t(X) %*% X
+Xy <- t(X) %*% y
+
+# block Gibbs sampler
+for (s in 1:S) {
+  
+  # Update beta0
+  v <- solve(XX / sig2 + diag(rep(1/tau2, p)))  
+  m <- v %*% (Xy / sig2 + mu0 / tau2) 
+  beta <- m + t(chol(v)) %*% rnorm(p)  
+  
+  # Update sig2 (variance)
+  sig2 <- rinvgamma(1, a + n/2, 
+                    b + t(y - X %*% beta)%*%(y-X%*%beta) / 2)
+  
+  # Store results
+  posterior_beta[s, ] <- beta
+  posterior_sig2[s] <- sig2
+}
+
+posterior2 <- cbind(posterior_beta, posterior_sig2)
+colnames(posterior2) <- c("beta0", "beta1", "beta2", 
+                          "beta3", "beta4", "sigma")
+
+#remove burn-in
+posterior2_burnin <- posterior2[1:round(s/2),]
+
+head(posterior2_burnin)
+```
+
+```{r}
+# Block Gibbs Sampler Trace plots
+par(mfrow=c(1,3))
+plot(posterior2_burnin[,1], type="l", las=1, main="beta0")
+plot(posterior2_burnin[,2], type="l", las=1, main="beta1")
+plot(posterior2_burnin[,3], type="l", las=1, main="beta2")
+plot(posterior2_burnin[,4], type="l", las=1, main="beta3")
+plot(posterior2_burnin[,5], type="l", las=1, main="beta4")
+plot(posterior2_burnin[,6], type="l", las=1, main="sig2")
+```
+
+```{r}
+# fit model in rstanarm
+grades_lmer <- stan_lmer(average_score ~ part_time_job + absence_days + extracurricular_activities + weekly_self_study_hours + career_aspiration + (1 | gender), 
+                       data = clean_data)
+
+# show results
+summary(grades_lmer, digits = 3)
+```
+
+```{r}
+pp_check(grades_lmer)
+```
