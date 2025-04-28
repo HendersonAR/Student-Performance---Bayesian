@@ -49,4 +49,19 @@ Are any variables skewed or have outliers that are of concern? If so, how will y
 
 What model(s) do you propose to use? You may want to specify the model as a hierarchical model.
 
+We think the block Gibbs Sampler and the rstanarm model, the traceplots showed convergence for all parameters, and the posterior predictive checks indicated that the model fit the data well.
+
+$Y_i|\beta_0 \beta_1, \beta_2, \beta_3, \beta_4, \sigma^2  \sim N(\beta_0+ \beta_1 x_{1i}+ \beta_2 x_{2i}+ \beta_3 x_{3i}+ \beta_4 x_{4i},\sigma^2)$
+
+where: $x_{1i},x_{2i},x_{3i},x_{4i}$ are the predictors for observation $i$.
+$\sigma^2$ is the residual variance
+
+$\beta_j \sim N(0, 10000^2)$ for all $j=0,1,2,3,4$
+
+$\sigma^2 \sim InvGamma(1, 1)$
+
+We considered including career aspirations as a predictor but decided not to incorporate it in this model, either because it was difficult to quantify appropriately.
+
 How will you estimate your model?
+
+We estimated the model using Bayesian sampling methods: Block Gibbs Sampling and rstanarm.
