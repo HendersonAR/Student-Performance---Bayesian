@@ -107,7 +107,7 @@ plot(posterior2_burnin[,6], type="l", las=1, main="sig2")
 
 ```{r}
 # fit model in rstanarm
-grades_lmer <- stan_lmer(average_score ~ part_time_job + absence_days + extracurricular_activities + weekly_self_study_hours + career_aspiration + (1 | gender), 
+grades_lmer <- stan_lmer(average_score ~ part_time_job + absence_days + extracurricular_activities + weekly_self_study_hours + career_aspiration, 
                        data = clean_data)
 
 # show results
