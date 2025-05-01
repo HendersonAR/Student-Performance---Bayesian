@@ -12,7 +12,6 @@ library(loo)
 library(kableExtra)
 ```
 
-
 ```{r}
 df <- read.csv("Data/student-scores-clean.csv") |>
   select(-id, -first_name, -last_name, -email) |>
@@ -65,7 +64,6 @@ plot(hs_fit, pars = c("beta"), prob = 0.9)
 
 ```
 
-
 ```{r}
 loo_fit <- loo(hs_fit)
 
@@ -93,6 +91,8 @@ df_sub <- df %>%
   )
 ```
 
+
+
 $$
 \begin{aligned}
 \text{average_score}_i \;|\;\beta_0, \beta_1, \beta_2, \beta_3, b_{0[\text{aspiration}_i]}, \sigma^2
@@ -106,6 +106,8 @@ b_{0[j]} &\sim \mathcal{N}(0,\;\tau^2),
 \quad j = 1,\dots,J
 \end{aligned}
 $$
+
+
 
 ```{r}
 # random intercept
@@ -121,6 +123,8 @@ model1 <- stan_lmer(
   chains = 4, iter = 2000, seed = 123
 )
 ```
+
+
 
 $$
 \begin{aligned}
@@ -143,6 +147,8 @@ b_{1[j]}
 \end{aligned}
 $$
 
+
+
 ```{r}
 # random intercept + slope on study hours
 model2 <- stan_lmer(
@@ -158,7 +164,6 @@ model2 <- stan_lmer(
 )
 
 ```
-
 
 ```{r}
 print(model1, digits = 2)
