@@ -1,0 +1,181 @@
+---
+title: "Variable Selection"
+format: pdf
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(BAS)        # spike‐and‐slab
+library(rstanarm)   # horseshoe
+library(loo)
+library(kableExtra)
+```
+
+```{r}
+df <- read.csv("Data/student-scores-clean.csv") |>
+  select(-id, -first_name, -last_name, -email) |>
+  mutate(
+    gender                  = factor(gender, labels = c("Female","Male")),
+    part_time_job           = factor(part_time_job),
+    extracurricular_activities = factor(extracurricular_activities),
+    career_aspiration       = factor(career_aspiration)
+  )
+
+# keep only non-collinear behavioral/demographic predictors
+vars_behavioral <- c("gender", "part_time_job", 
+                     "absence_days", "extracurricular_activities", 
+                     "weekly_self_study_hours", "career_aspiration")
+
+df_sub <- df %>% select(average_score, all_of(vars_behavioral))
+```
+
+```{r}
+bas_fit <- bas.lm(
+  average_score ~ ., 
+  data      = df_sub, 
+  prior     = "ZS-null", 
+  modelprior = uniform(),
+  n.models  = 2^length(vars_behavioral)
+)
+
+# posterior inclusion probabilities (PIP)
+pip <- summary(bas_fit)
+```
+
+```{r}
+hs_fit <- stan_glm(
+  average_score ~ ., 
+  data            = df_sub, 
+  family          = gaussian(),
+  prior_intercept = normal(0, 10),
+  prior           = hs(),     # global–local horseshoe
+  chains          = 4, 
+  iter            = 2000,
+  seed            = 2025
+)
+
+print(hs_fit, digits = 2)
+```
+
+```{r}
+
+plot(hs_fit, pars = c("beta"), prob = 0.9)
+
+```
+
+```{r}
+loo_fit <- loo(hs_fit)
+
+# extract into a tibble
+loo_df <- tibble(
+  Metric        = c("elpd_loo", "se_elpd_loo", "p_loo"),
+  Estimate      = c(loo_fit$estimates["elpd_loo","Estimate"],
+                    loo_fit$estimates["elpd_loo","SE"],
+                    loo_fit$estimates["p_loo","Estimate"])
+)
+
+# display
+kable(
+  loo_df,
+  digits  = 2,
+  caption = "LOO Cross‐Validation Metrics"
+)
+```
+
+```{r}
+df_sub <- df %>%
+  select(
+    average_score,
+    -starts_with("career_aspiration")
+  )
+```
+
+
+
+$$
+\begin{aligned}
+\text{average_score}_i \;|\;\beta_0, \beta_1, \beta_2, \beta_3, b_{0[\text{aspiration}_i]}, \sigma^2
+&\sim \mathcal{N}\bigl(\mu_i,\;\sigma^2\bigr), \\[4pt]
+\mu_i &= \beta_0
+         + \beta_1\,\text{weekly_self_study_hours}_i
+         + \beta_2\,\text{absence_days}_i
+         + \beta_3\,\text{extracurricular_activities}_i
+         + b_{0[\text{aspiration}_i]}, \\[4pt]
+b_{0[j]} &\sim \mathcal{N}(0,\;\tau^2), 
+\quad j = 1,\dots,J
+\end{aligned}
+$$
+
+
+
+```{r}
+# random intercept
+model1 <- stan_lmer(
+  average_score ~ weekly_self_study_hours 
+                + absence_days 
+                + extracurricular_activities 
+                + (1 | career_aspiration),
+  data = df,
+  prior_intercept    = normal(75, 10),
+  prior              = normal(0, 5),
+  prior_covariance   = decov(regularization = 2),
+  chains = 4, iter = 2000, seed = 123
+)
+```
+
+
+
+$$
+\begin{aligned}
+\text{average\_score}_i \;|\;\beta_0, \beta_1, \beta_2, \beta_3, \mathbf{b}_{[\text{aspiration}_i]}, \sigma^2
+&\sim \mathcal{N}\bigl(\mu_i,\;\sigma^2\bigr), \\[4pt]
+\mu_i &= \beta_0
+         + \beta_1\,\text{weekly_self_study_hours}_i
+         + \beta_2\,\text{absence_days}_i
+         + \beta_3\,\text{extracurricular_activities}_i
+         + b_{0[\text{aspiration}_i]}
+         + b_{1[\text{aspiration}_i]}\,\text{weekly_self_study_hours}_i, \\[4pt]
+\begin{pmatrix}
+b_{0[j]} \\[2pt]
+b_{1[j]}
+\end{pmatrix}
+&\sim \mathcal{N}\!\Biggl(\!
+\begin{pmatrix}0\\0\end{pmatrix},\;
+\Sigma\Biggr),
+\quad j = 1,\dots,J
+\end{aligned}
+$$
+
+
+
+```{r}
+# random intercept + slope on study hours
+model2 <- stan_lmer(
+  average_score ~ weekly_self_study_hours 
+                + absence_days 
+                + extracurricular_activities 
+                + (1 + weekly_self_study_hours | career_aspiration),
+  data = df,
+  prior_intercept    = normal(75, 10),
+  prior              = normal(0, 5),
+  prior_covariance   = decov(regularization = 2),
+  chains = 4, iter = 2000, seed = 123
+)
+
+```
+
+```{r}
+print(model1, digits = 2)
+print(model2, digits = 2)
+
+#Posterior predictive checks
+pp_check(model1)
+pp_check(model2)
+
+# Compare with LOO
+loo1 <- loo(model1)
+loo2 <- loo(model2)
+loo_compare(loo1, loo2)
+```
+
