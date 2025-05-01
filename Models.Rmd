@@ -1,11 +1,10 @@
 ---
-title: "Data Analysis"
-author: "Jessica Reyes"
+title: "Models"
 date: "2025-04-28"
 output: pdf_document
 ---
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
 library(rstan)
@@ -18,6 +17,7 @@ clean_data <- read.csv("student-scores-clean.csv")
 head(student_data)
 head(clean_data)
 ```
+
 $$
 Y_i|B_0, B_1, \sigma^2 \sim N(\beta_0+\beta_1x_{1i}+\beta_2x_{2i}+\beta_3x_{3i}+\beta_4x_{4i},\sigma^2) \\
 \text{ where: } x_{1i},x_{2i},x_{3i},x_{4i} \text{are the predictors for observation i}
@@ -31,7 +31,7 @@ $$
 \sigma^2 \sim InvGamma(\alpha_1, \alpha_2)
 $$
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 #Block Gibbs Sampler
 set.seed(4889)
 clean_data <- read.csv("student-scores-clean.csv")
@@ -105,9 +105,11 @@ plot(posterior2_burnin[,5], type="l", las=1, main="beta4")
 plot(posterior2_burnin[,6], type="l", las=1, main="sig2")
 ```
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 # fit model in rstanarm
-grades_lmer <- stan_lmer(average_score ~ part_time_job + absence_days + extracurricular_activities + weekly_self_study_hours + career_aspiration, 
+grades_lmer <- stan_lmer(average_score ~ part_time_job + 
+                           absence_days + extracurricular_activities + 
+                           weekly_self_study_hours + career_aspiration + (1|gender), 
                        data = clean_data)
 
 # show results
@@ -116,4 +118,110 @@ summary(grades_lmer, digits = 3)
 
 ```{r}
 pp_check(grades_lmer)
+```
+
+```{r warning=FALSE, message=FALSE}
+set.seed(12344)
+library(MCMCpack)
+# Gibbs
+data <- read.csv("student-scores-clean.csv")
+  y <- clean_data$average_score
+  x1 <- clean_data$part_time_job
+  x2 <- clean_data$absence_days
+  x3 <- clean_data$extracurricular_activities
+  x4 <- clean_data$weekly_self_study_hours
+#design matrix
+  z <- model.matrix(~as.factor(career_aspiration)-1, data=data)
+
+gibbs <- function(y,x1,x2,x3,x4,z,a,b,a_kappa,b_kappa,mu0,tau2,S) {
+ 
+  n <- length(y)
+  
+  X <-cbind(1,x1,x2,x3,x4,z)
+  
+  p <-ncol(X)
+  
+  
+  
+  # hyperparameters
+  
+  #fixed tau for the first 3 something
+  tau2 <- 100^2
+  beta <- rep(0,p)
+  kappa2 <- 1
+  
+  a <- b <- 1 # complete
+  a_kappa <- b_kappa <- 1
+  mu0 <- 0
+  
+  #draws
+  S <- 1000
+  
+  #place to store data
+  posterior_beta <- matrix(NA,S,p)
+  posterior_sig2 <- rep(NA,S)
+  posterior_kappa2 <- rep(NA, S)
+  
+  
+  #starting values
+  beta <- rep(0,p)
+  sig2 <- 1
+
+  XX <- t(X)%*%X
+  Xy <- t(X)%*%y
+  
+  for(s in 1:S){
+    # update beta0
+    prior_cov <- diag(c(rep(1/tau2,3),rep(1/kappa2,p-3)))
+    v <- solve(XX/sig2 + prior_cov)
+    m <- v %*% (Xy/sig2 + mu0*diag(prior_cov))
+    beta <- m + t(chol(v)) %*% rnorm(p)
+    #update sig2
+    sig2 <- rinvgamma(1, a + n/2,
+                      b + t(y-X%*%beta)%*%(y-X%*%beta)/2)
+    #update kappa
+    kappa2 <- rinvgamma(1, a_kappa + (p-3)/2, 
+                        b_kappa +0.5* sum((beta[-c(1:3)])^2))
+    
+    #store results
+    posterior_beta[s,] <- beta
+    posterior_sig2[s] <- sig2
+    posterior_kappa2[s] <- kappa2
+    
+  }
+  return(cbind(posterior_beta, posterior_sig2, posterior_kappa2))
+}
+post_samples <- gibbs(y,x1,x2,x3,x4,z,a,b,a_kappa,b_kappa,mu0,tau2,S);
+```
+
+```{r}
+set.seed(222)
+num_beta <- ncol(post_samples) - 2 
+post_samples_burnin <- post_samples[-c(1:500), ]  
+
+results <- data.frame(
+  mean = colMeans(post_samples_burnin),
+  sd = apply(post_samples_burnin, 2, sd),
+  lower = apply(post_samples_burnin, 2, quantile, 0.025),
+  upper = apply(post_samples_burnin, 2, quantile, 0.975)
+)
+row.names(results) <- c(paste0("beta_", 0:(num_beta - 1)), "kappa2", "sigma")
+
+head(results)  
+tail(results)
+```
+
+```{r}
+par(mfrow = c(2, 3))
+
+for (i in 1:3) {
+  plot(post_samples_burnin[, i], type = "l", las = 1,
+       main = paste0("Beta", i - 1),
+       xlab = "Iteration", ylab = paste0("beta_", i - 1))
+}
+plot(post_samples_burnin[, num_beta + 1], type = "l", las = 1,
+     main = "Kappa2", xlab = "Iteration", ylab = "kappa2")
+
+plot(post_samples_burnin[, num_beta + 2], type = "l", las = 1,
+     main = "Sigma2", xlab = "Iteration", ylab = "sigma2")
 ```
