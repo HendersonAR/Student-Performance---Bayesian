@@ -1,0 +1,13 @@
+---
+title: "Poster Modeling Code"
+author: "Group I"
+format: html
+---
+
+## Exploratory Data Analysis Code (Python)
+
+## Algorithm Outline (This should be LaTeX)
+
+## Block Sampler Code (R)
+
+## RStanarm Code (R)
