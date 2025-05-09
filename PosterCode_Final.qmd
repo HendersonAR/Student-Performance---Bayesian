@@ -164,6 +164,15 @@ posterior2_burnin <- posterior2[1:round(s/2),]
 head(posterior2_burnin)
 ```
 
+```{r}
+ci <- apply(posterior2_burnin[, 1:5],
+            2,
+            quantile,
+            probs = c(.05/2, 1 - .05/2))
+
+print(ci)
+```
+
 ### Trace plots for Block Gibbs
 
 ```{r}
